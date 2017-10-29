@@ -15,7 +15,7 @@ struct Ray{
 bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data ){
     Vec3f test_r = vertex_data[sphere.center_vertex_id-1];
     Vector3f c_sphere(test_r.x,test_r.y,test_r.z);
-    ray.direction.z = test_r.z;
+    //ray.direction.z = test_r.z;
     //ray.direction.normalize();
     //Vector3f d = ray.direction - c_sphere ;
     //Vector3f ec = ray.cam - c_sphere ;
@@ -37,7 +37,7 @@ bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data ){
     if (lr1 <= sphere.radius)
         return true;
     return false;*/
-    if(delta<1e-3)
+    if(delta<1e-2)
     return false;
     else
     return true;
@@ -73,7 +73,7 @@ Ray raytracer(int x, int y , int width, int height, Camera camera){
     ray.direction.x = u;
     ray.direction.y = v;
     //ray.direction.z = camera.near_distance;
-    Vector3f v1(u+camera.near_distance*camera.gaze.x,v+camera.near_distance*camera.gaze.y,-camera.near_distance*camera.gaze.z);
+    Vector3f v1(-u-camera.near_distance*camera.gaze.x,v+camera.near_distance*camera.gaze.y,-camera.near_distance*camera.gaze.z);
     //ray.direction=u+v;
     ray.direction = v1;
     //ray.direction.normalize();
