@@ -16,33 +16,33 @@ bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data ){
     Vec3f test_r = vertex_data[sphere.center_vertex_id-1];
     Vector3f c_sphere(test_r.x,test_r.y,test_r.z);
     ray.direction.z = test_r.z;
-    ray.direction.normalize();
+    //ray.direction.normalize();
     Vector3f d = ray.direction - c_sphere ;
     Vector3f ec = ray.cam - c_sphere ;
-    float bb = 2 * d.dot(ec) ;
+    /*float bb = 2 * d.dot(ec) ;
     float a = d.dot(d);
     float c = ec.dot(ec);
     if ( (bb*bb - 4 * a*c ) >= 0 )
         return false;
-    return true;
-   /* Vector3f r1 = c_sphere-ray.direction;
+    return true;*/
+   Vector3f r1 = c_sphere-ray.direction;
     float lr1 = r1.length();
     std:: cout << r1.x << endl;
     if (lr1 <= sphere.radius)
         return true;
-    return false;*/
+    return false;
 }
 Ray raytracer(int x, int y , int width, int height, Camera camera){
     Ray ray;
-    float u  = -1 + 2*(x + 0.5 ) / width;
-    float v  = -1 + 2*(y + 0.5 ) / height;
+    float u  = camera.near_plane.x + (camera.near_plane.y-camera.near_plane.x)*(x + 0.5 ) / width;
+    float v  = camera.near_plane.z + (camera.near_plane.w-camera.near_plane.z)*(y + 0.5 ) / height;
     float d  =  camera.position.z;
     ray.cam.x = camera.position.x;
     ray.cam.x = camera.position.y;
     ray.cam.x = camera.position.z;
     ray.direction.x = u;
     ray.direction.y = v;
-    ray.direction.z = -d;
+    ray.direction.z = camera.near_distance;
     //ray.direction.normalize();
     return ray;
 }
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
         {   0,   0,   0 },  // Black
     };
 
-    int width = 640, height = 480;
+    int width = 800, height = 800;
     int columnWidth = width ;
     Camera camera;
     Ray ray;
