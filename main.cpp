@@ -25,17 +25,27 @@ bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data ){
     if ( (bb*bb - 4 * a*c ) >= 0 )
         return false;
     return true;*/
-   Vector3f r1 = c_sphere-ray.direction;
+    double a,b,c,delta,t,t1,t2;
+    double c1=(ray.cam.x-c_sphere.x)*(ray.cam.x-c_sphere.x)+(ray.cam.y-c_sphere.y)*(ray.cam.y-c_sphere.y)+(ray.cam.z-c_sphere.z)*(ray.cam.z-c_sphere.z);//.dot(ray.cam-c_sphere);
+    c=c1-sphere.radius*sphere.radius;
+    b=2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z);
+    a=(ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z);
+    delta=b*b-4*a*c;
+    /*Vector3f r1 = c_sphere-ray.direction;
     float lr1 = r1.length();
     std:: cout << lr1 << endl;
     if (lr1 <= sphere.radius)
         return true;
+    return false;*/
+    if(delta<1e-3)
     return false;
+    else
+    return true;
 }
 bool triangle( Ray ray,Triangle triangle, std::vector<Vec3f> vertex_data) {
-    Vector3f a (vertex_data[triangle.indices.v0_id].x,vertex_data[triangle.indices.v0_id].y,vertex_data[triangle.indices.v0_id].z);
-    Vector3f b (vertex_data[triangle.indices.v1_id].x,vertex_data[triangle.indices.v1_id].y,vertex_data[triangle.indices.v1_id].z);
-    Vector3f c (vertex_data[triangle.indices.v2_id].x,vertex_data[triangle.indices.v2_id].y,vertex_data[triangle.indices.v2_id].z);
+    Vector3f a (vertex_data[triangle.indices.v0_id-1].x,vertex_data[triangle.indices.v0_id-1].y,vertex_data[triangle.indices.v0_id-1].z);
+    Vector3f b (vertex_data[triangle.indices.v1_id-1].x,vertex_data[triangle.indices.v1_id-1].y,vertex_data[triangle.indices.v1_id-1].z);
+    Vector3f c (vertex_data[triangle.indices.v2_id-1].x,vertex_data[triangle.indices.v2_id-1].y,vertex_data[triangle.indices.v2_id-1].z);
     Vector3f d = ray.direction - ray.cam;
     float a1 = a.x - b.x;       float b1 = a.y - b.y;       float c1 = a.z - b.z;
     float d1 = a.x - c.x;       float e  = a.y - c.y;       float f  = a.z - c.z;
@@ -50,18 +60,22 @@ bool triangle( Ray ray,Triangle triangle, std::vector<Vec3f> vertex_data) {
     if (beta < 0 || beta > 1 - alfa )
         return false;
     return true;
-}  
+}
 Ray raytracer(int x, int y , int width, int height, Camera camera){
     Ray ray;
-    float u  = (camera.near_plane.x + (camera.near_plane.y-camera.near_plane.x)*(x + 0.5 ) / width) ;
-    float v  = (camera.near_plane.z + (camera.near_plane.w-camera.near_plane.z)*(y + 0.5 ) / height);
+    float u  = (camera.near_plane.x + (camera.near_plane.y-camera.near_plane.x)*(x + 0.5 ) / (width)) ;
+    float v  = (camera.near_plane.z + (camera.near_plane.w-camera.near_plane.z)*(y + 0.5 ) / (height));
     float d  =  camera.position.z;
     ray.cam.x = camera.position.x;
     ray.cam.y = camera.position.y;
     ray.cam.z = camera.position.z;
-    ray.direction.x = v;
-    ray.direction.y = u;
-    ray.direction.z = -camera.near_distance;
+
+    ray.direction.x = u;
+    ray.direction.y = v;
+    //ray.direction.z = camera.near_distance;
+    Vector3f v1(u+camera.near_distance*camera.gaze.x,v+camera.near_distance*camera.gaze.y,-camera.near_distance*camera.gaze.z);
+    //ray.direction=u+v;
+    ray.direction = v1;
     //ray.direction.normalize();
     return ray;
 }
@@ -100,7 +114,7 @@ int main(int argc, char* argv[])
         for (int x = 0; x < width; ++x)
         {
             ray = raytracer(x,y,width,height,scene.cameras[0]);
-            if ( sphere ( ray,scene.spheres[0],scene.vertex_data) || triangle(ray, scene.triangles[0], scene.vertex_data) ){
+            if (  sphere ( ray,scene.spheres[0],scene.vertex_data) || triangle(ray, scene.triangles[0], scene.vertex_data) ){
                 image[i++] = BAR_COLOR[0][0];
                 image[i++] = BAR_COLOR[0][1];
                 image[i++] = BAR_COLOR[0][2];
@@ -109,6 +123,7 @@ int main(int argc, char* argv[])
                 image[i++] = BAR_COLOR[7][1];
                 image[i++] = BAR_COLOR[7][2];
             }
+
         }
     }
 
