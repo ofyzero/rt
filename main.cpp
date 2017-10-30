@@ -15,29 +15,13 @@ struct Ray{
 bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data ){
     Vec3f test_r = vertex_data[sphere.center_vertex_id-1];
     Vector3f c_sphere(test_r.x,test_r.y,test_r.z);
-    //ray.direction.z = test_r.z;
-    //ray.direction.normalize();
-    //Vector3f d = ray.direction - c_sphere ;
-    //Vector3f ec = ray.cam - c_sphere ;
-    /*float bb = 2 * d.dot(ec) ;
-    float a = d.dot(d);
-    float c = ec.dot(ec);
-    if ( (bb*bb - 4 * a*c ) >= 0 )
-        return false;
-    return true;*/
     double a,b,c,delta,t,t1,t2;
     double c1=(ray.cam.x-c_sphere.x)*(ray.cam.x-c_sphere.x)+(ray.cam.y-c_sphere.y)*(ray.cam.y-c_sphere.y)+(ray.cam.z-c_sphere.z)*(ray.cam.z-c_sphere.z);//.dot(ray.cam-c_sphere);
     c=c1-sphere.radius*sphere.radius;
     b=2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z);
     a=(ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z);
     delta=b*b-4*a*c;
-    /*Vector3f r1 = c_sphere-ray.direction;
-    float lr1 = r1.length();
-    std:: cout << lr1 << endl;
-    if (lr1 <= sphere.radius)
-        return true;
-    return false;*/
-    if(delta<1e-2)
+    if(delta<1e-3)
     return false;
     else
     return true;
@@ -72,11 +56,9 @@ Ray raytracer(int x, int y , int width, int height, Camera camera){
 
     ray.direction.x = u;
     ray.direction.y = v;
-    //ray.direction.z = camera.near_distance;
+    
     Vector3f v1(-u-camera.near_distance*camera.gaze.x,v+camera.near_distance*camera.gaze.y,-camera.near_distance*camera.gaze.z);
-    //ray.direction=u+v;
     ray.direction = v1;
-    //ray.direction.normalize();
     return ray;
 }
 int main(int argc, char* argv[])
@@ -102,31 +84,60 @@ int main(int argc, char* argv[])
         {   0,   0,   0 },  // Black
     };
 
-    int width = 800, height = 800;
+    int width = 640, height = 480;
     int columnWidth = width ;
     Camera camera;
     Ray ray;
     unsigned char* image = new unsigned char [width * height * 3];
-
     int i = 0;
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
         {
+            int check = 0;
             ray = raytracer(x,y,width,height,scene.cameras[0]);
-            if (  sphere ( ray,scene.spheres[0],scene.vertex_data) || triangle(ray, scene.triangles[0], scene.vertex_data) ){
+            if (  sphere ( ray,scene.spheres[0],scene.vertex_data) ){
                 image[i++] = BAR_COLOR[0][0];
                 image[i++] = BAR_COLOR[0][1];
                 image[i++] = BAR_COLOR[0][2];
-            }else{
+                check = 1;
+            }
+            if(!check){
+                if( triangle(ray, scene.triangles[0], scene.vertex_data) ){
+                    image[i++] = BAR_COLOR[0][0];
+                    image[i++] = BAR_COLOR[0][1];
+                    image[i++] = BAR_COLOR[0][2];
+                    check = 1;
+                } 
+            }
+            
+            if(!check){
+                
+                int j = 0 ;
+                while ( j < scene.meshes[0].faces.size()){
+                    Triangle triangle_temp;
+                    triangle_temp.indices = scene.meshes[0].faces[j];
+                    triangle_temp.material_id = scene.meshes[0].material_id;
+                    if (   triangle(ray, triangle_temp, scene.vertex_data) ){
+                        image[i++] = BAR_COLOR[0][0];
+                        image[i++] = BAR_COLOR[0][1];
+                        image[i++] = BAR_COLOR[0][2];
+                        check = 1;
+                        break;
+                    }
+                    cout <<  " "<< j << endl;
+                    j++;
+                }
+            }
+            if (!check){
                 image[i++] = BAR_COLOR[7][0];
                 image[i++] = BAR_COLOR[7][1];
                 image[i++] = BAR_COLOR[7][2];
+                
             }
-
         }
     }
-
+    //cout<< j << endl;
     write_ppm(argv[2], image, width, height);
 
 }
