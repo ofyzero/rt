@@ -94,7 +94,7 @@ Vector3f make_color(Material material,Vec3f ambient_light,PointLight pointlight,
     Vector3f s=ray.direction+ray.cam;                                                                   // s
     Vector3f ls=s-Vpointlightposition;                                                                  // ligth direction
     Vector3f Vspecular(material.specular.x,material.specular.y,material.specular.z);                    // specular
-    Vector3f color
+
     double dotnl=(s.normalize()).dot(ls.normalize());
     Vector3f h=(ls+( ray.cam - s) ).normalize();
     double dotnh=(s.normalize()).dot(h);
@@ -107,6 +107,8 @@ Vector3f make_color(Material material,Vec3f ambient_light,PointLight pointlight,
         max2=dotnh;
     else
         max2=0;
+   
+    Vector3f color=VMaterialAmbient*Vambientlight+Vdiffuse*VpointlightIntensity*max1+Vspecular*VpointlightIntensity*pow(max2,material.phong_exponent);
     return color;
 }
 
@@ -151,7 +153,7 @@ int main(int argc, char* argv[])
                 }
                 j++;
             }
-            j = 0 ;
+            /*j = 0 ;
 
             while ( j < scene.triangles.size()){
                 
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
                 }
                 j++;
             } 
-            
+            */
             if (tdistance > 0){
                 Vector3f color = make_color( scene.materials[mid-1],scene.ambient_light,scene.point_lights[0],ray);
                cout << int(color.x) << " " << int(color.y) << " " << int(color.z) << endl;
