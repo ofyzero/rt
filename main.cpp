@@ -125,10 +125,10 @@ Vector3f make_color( Scene scene,Ray ray ){
         Vector3f c (scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].x,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].y,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].z);
         n = ((b - a).cross(c - a )).normalize();
     }
-    Vector3f l = ( PLP - s ).normalize();
+    Vector3f l = (s- PLP  ).normalize();
     Vector3f v = ( ray.cam - s ).normalize();
     Vector3f h = (( PLP - s ) + ( ray.cam - s ) ).normalize();
-    double distance = (PLP - s ).length();
+    double distance = (s-PLP ).length();
     double nl = n.dot(l);
     double hn = h.dot(n);
     double maxnl = 0;
