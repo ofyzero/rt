@@ -3,13 +3,17 @@
 #include "ppm.h"
 #include "Vector3f.h"
 #include <math.h>
+
 using namespace parser;
 using namespace std;
 typedef unsigned char RGB[3];
 
-int tdistance;
+Vector3f k;
+double tdistance;
 int mid;
-
+int VvsS = 0;
+int point = 0;
+int Meshface = 0;
 struct Ray{
 
     Vector3f cam;
@@ -25,7 +29,7 @@ bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data,float shado
     b=2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z);
     a=(ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z);
     delta=b*b-4*a*c;
-    if(delta<shadow_ray_epsilon)
+    if(delta < shadow_ray_epsilon)
         return false;
     double t1 = -((2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z))/2 + sqrt( b*b-4*a*c ) )/ 
     ((ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z)) ;
@@ -58,7 +62,6 @@ bool triangle( Ray ray,Triangle triangle, std::vector<Vec3f> vertex_data) {
     if (t < 0 || t > t1)
       return false;
     float alfa =  ( i * ( a1 * k - j * b1 ) + h * ( j * c1 - a1 * l ) + g * ( b1 * l - k * c1 ) ) / M;
-    
     if ( alfa < 0  || alfa > 1)
         return false;
     float beta =  ( j * ( e * i - h * f ) + k * ( g * f - d1 * i ) + l * ( d1 * h - g * e) ) / M;
@@ -73,45 +76,76 @@ Ray raytracer(int x, int y , int width, int height, Camera camera){
     Ray ray;
     float u  = (camera.near_plane.x + (camera.near_plane.y-camera.near_plane.x)*(x + 0.5 ) / (width)) ;
     float v  = (camera.near_plane.z + (camera.near_plane.w-camera.near_plane.z)*(y + 0.5 ) / (height));
-    float d  =  camera.position.z;
+    
     ray.cam.x = camera.position.x;
     ray.cam.y = camera.position.y;
     ray.cam.z = camera.position.z;
 
     ray.direction.x = u;
     ray.direction.y = v;
-    
-    Vector3f v1(u+camera.near_distance*camera.gaze.x,-v-camera.near_distance*camera.gaze.y,camera.near_distance*camera.gaze.z);
+    Vector3f a (camera.gaze.x,camera.gaze.y,camera.gaze.z);
+    Vector3f NorGaze = a.normalize();
+    Vector3f v1(u+camera.near_distance*NorGaze.x,-v-camera.near_distance*NorGaze.y,camera.near_distance*NorGaze.z);
     ray.direction = v1;
     return ray;
 }
-Vector3f make_color(Material material,Vec3f ambient_light,PointLight pointlight,Ray ray){
-    Vector3f Vambientlight(ambient_light.x,ambient_light.y,ambient_light.z);                            // ambient_light
-    Vector3f Vdiffuse(material.diffuse.x,material.diffuse.y,material.diffuse.z);                        // diffuse coficient
-    Vector3f Vpointlightposition(pointlight.position.x,pointlight.position.y,pointlight.position.z);    // light position
-    Vector3f VMaterialAmbient(material.ambient.x,material.ambient.y,material.ambient.z);                // material ambiant
-    Vector3f VpointlightIntensity(pointlight.intensity.x,pointlight.intensity.y,pointlight.intensity.z);// ligth instensity     
-    Vector3f s=ray.direction+ray.cam;                                                                   // s
-    Vector3f ls=s-Vpointlightposition;                                                                  // ligth direction
-    Vector3f Vspecular(material.specular.x,material.specular.y,material.specular.z);                    // specular
+Vector3f make_color( Scene scene,Ray ray ){
 
-    double dotnl=(s.normalize()).dot(ls.normalize());
-    Vector3f h=(ls+( ray.cam - s) ).normalize();
-    double dotnh=(s.normalize()).dot(h);
-    double max1,max2;
-    if(dotnl>0)
-        max1=dotnl;
-    else
-        max1=0;
-    if(dotnh>0)
-        max2=dotnh;
-    else
-        max2=0;
-   
-    Vector3f color=VMaterialAmbient*Vambientlight+Vdiffuse*VpointlightIntensity*max1+Vspecular*VpointlightIntensity*pow(max2,material.phong_exponent);
-    return color;
+    
+    Vector3f AL(scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z);                                             // ambient_light
+    Vector3f D(scene.materials[mid].diffuse.x,scene.materials[mid].diffuse.y,scene.materials[mid].diffuse.z);                   // diffuse coficient
+    Vector3f PLP(scene.point_lights[0].position.x,scene.point_lights[0].position.y,scene.point_lights[0].position.z);                 // light position
+    Vector3f MA(scene.materials[mid].ambient.x,scene.materials[mid].ambient.y,scene.materials[mid].ambient.z);                  // material ambiant
+    Vector3f PLI(scene.point_lights[0].intensity.x,scene.point_lights[0].intensity.y,scene.point_lights[0].intensity.z);              // ligth instensity     
+    Vector3f S(scene.materials[mid].specular.x,scene.materials[mid].specular.y,scene.materials[mid].specular.z);                // specular
+    Vector3f DirecDistan(tdistance*ray.direction.x ,tdistance*ray.direction.y,tdistance*ray.direction.z);
+    Vector3f s = (ray.cam + DirecDistan);
+    Vector3f n;
+    if (VvsS == 2 ){ // sphere
+        Vec3f test_r = scene.vertex_data[scene.spheres[point].center_vertex_id-1];
+        Vector3f c_sphere(test_r.x,test_r.y,test_r.z);
+        n.x = (s.x-c_sphere.x)/scene.spheres[point].radius;
+        n.y = (s.y-c_sphere.y)/scene.spheres[point].radius;
+        n.z = (s.z-c_sphere.z)/scene.spheres[point].radius;
+        //n = n.normalize();
+        cout<< tdistance<<" " << VvsS << endl;
+    }
+    if (VvsS == 1 ){ // triangle
+
+        Vector3f a (scene.vertex_data[scene.triangles[point].indices.v0_id-1].x,scene.vertex_data[scene.triangles[point].indices.v0_id-1].y,scene.vertex_data[scene.triangles[point].indices.v0_id-1].z);
+        Vector3f b (scene.vertex_data[scene.triangles[point].indices.v1_id-1].x,scene.vertex_data[scene.triangles[point].indices.v1_id-1].y,scene.vertex_data[scene.triangles[point].indices.v1_id-1].z);
+        Vector3f c (scene.vertex_data[scene.triangles[point].indices.v2_id-1].x,scene.vertex_data[scene.triangles[point].indices.v2_id-1].y,scene.vertex_data[scene.triangles[point].indices.v2_id-1].z);
+        n = ((b - a).cross(c - a )).normalize(); 
+
+    }
+    if (VvsS == 3){ // mesh
+
+        Vector3f a (scene.vertex_data[scene.meshes[point].faces[Meshface].v0_id-1].x,scene.vertex_data[scene.meshes[point].faces[Meshface].v0_id-1].y,scene.vertex_data[scene.meshes[point].faces[Meshface].v0_id-1].z);
+        Vector3f b (scene.vertex_data[scene.meshes[point].faces[Meshface].v1_id-1].x,scene.vertex_data[scene.meshes[point].faces[Meshface].v1_id-1].y,scene.vertex_data[scene.meshes[point].faces[Meshface].v1_id-1].z);
+        Vector3f c (scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].x,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].y,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].z);
+        n = ((b - a).cross(c - a )).normalize(); 
+    }
+    Vector3f l = ( PLP - s ).normalize();
+    Vector3f v = ( ray.cam - s ).normalize();
+    Vector3f h = (l + v ).normalize();
+    double distance = (PLP - s ).length();
+    double nl = n.dot(l);
+    double hn = h.dot(n);
+    double maxnl = 0;
+    double maxhn = 0;
+    if (nl > 0)
+        maxnl =10* nl;
+    if ( hn > 0 )
+        maxhn =10* hn;
+    Vector3f L = AL * MA + ( D * PLI * maxnl /  distance * distance ) +  ( S * PLI * pow(maxhn,scene.materials[mid].phong_exponent) / distance * distance );
+
+    return L;
+    
 }
+float clamp(float x, float a, float b){
 
+    return x < a ? a : (x > b ? b : x);
+}
 int main(int argc, char* argv[])
 {
     // Sample usage for reading an XML scene file
@@ -135,29 +169,35 @@ int main(int argc, char* argv[])
         {   0,   0,   0 },  // Black
     };
 
-    int width = scene.cameras[0].image_width, height = scene.cameras [0].image_height;
-    int columnWidth = width ;
+    int width = scene.cameras[0].image_width, height = scene.cameras[0].image_height;
+    int  i = 0;
     Camera camera;
     Ray ray;
     unsigned char* image = new unsigned char [width * height * 3];
-    int i = 0;
+    
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
-        {
+        {   
             ray = raytracer(x,y,width,height,scene.cameras[0]);
             int j = 0 ;
             while ( j < scene.spheres.size()){
                 if (  sphere ( ray,scene.spheres[j],scene.vertex_data,scene.shadow_ray_epsilon) ){
+                    mid = scene.spheres[j].material_id-1;
+                    VvsS = 2 ;
+                    point = j;
                     break;
                 }
                 j++;
             }
-            /*j = 0 ;
+            j = 0 ;
 
             while ( j < scene.triangles.size()){
                 
                 if( triangle(ray, scene.triangles[j], scene.vertex_data) ){
+                    mid = scene.triangles[j].material_id-1;
+                    VvsS = 1 ;
+                    point = j;
                     break;
                 }
                 j++;
@@ -172,20 +212,26 @@ int main(int argc, char* argv[])
                     triangle_temp.indices = scene.meshes[j].faces[k];
                     triangle_temp.material_id = scene.meshes[j].material_id;
                     if (   triangle(ray, triangle_temp, scene.vertex_data) ){
+                        mid = triangle_temp.material_id-1;
+                        VvsS = 3 ;
+                        point = j;
+                        Meshface = k;
                         break;
                     }
                     k++;
                 }
+                if(VvsS == 3)
+                        break;
                 j++;
             } 
-            */
+            
             if (tdistance > 0){
-                Vector3f color = make_color( scene.materials[mid-1],scene.ambient_light,scene.point_lights[0],ray);
-               cout << int(color.x) << " " << int(color.y) << " " << int(color.z) << endl;
 
-                image[i++] = int(color.x) % 256;
-                image[i++] = int(color.y) % 256;
-                image[i++] = int(color.z) % 256;
+                Vector3f color = make_color( scene,ray);
+
+                image[i++] = clamp(int(color.x), 0, 255);
+                image[i++] = clamp(int(color.y), 0, 255);
+                image[i++] = clamp(int(color.z), 0, 255);
                 //cout << int(color.x) % 256  << " " << int(color.y)  % 256<< " " << int(color.z)  % 256<< endl;
                 
 
@@ -196,6 +242,9 @@ int main(int argc, char* argv[])
 
             }
             tdistance = 0;
+            VvsS = 0 ;
+            point = 0;
+            Meshface = 0;
         }
     }
     //cout<< j << endl;
