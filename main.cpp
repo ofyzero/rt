@@ -8,7 +8,7 @@ using namespace parser;
 using namespace std;
 typedef unsigned char RGB[3];
 
-Vector3f k;
+
 double tdistance;
 int mid;
 int VvsS = 0;
@@ -100,15 +100,15 @@ Vector3f make_color( Scene scene,Ray ray ){
     Vector3f S(scene.materials[mid].specular.x,scene.materials[mid].specular.y,scene.materials[mid].specular.z);                // specular
     Vector3f DirecDistan(tdistance*ray.direction.x ,tdistance*ray.direction.y,tdistance*ray.direction.z);
     Vector3f s = (ray.cam + DirecDistan);
-    Vector3f n;
+    Vector3f n,a,b,c;
     if (VvsS == 2 ){ // sphere
         Vec3f test_r = scene.vertex_data[scene.spheres[point].center_vertex_id-1];
         Vector3f c_sphere(test_r.x,test_r.y,test_r.z);
         n.x = (s.x-c_sphere.x)/scene.spheres[point].radius;
         n.y = (s.y-c_sphere.y)/scene.spheres[point].radius;
         n.z = (s.z-c_sphere.z)/scene.spheres[point].radius;
-        //n = n.normalize();
-        cout<< tdistance<<" " << VvsS << endl;
+        n = n.normalize();
+        //cout<< tdistance<<" " << VvsS << endl;
     }
     if (VvsS == 1 ){ // triangle
 
@@ -125,10 +125,15 @@ Vector3f make_color( Scene scene,Ray ray ){
         Vector3f c (scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].x,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].y,scene.vertex_data[scene.meshes[point].faces[Meshface].v2_id-1].z);
         n = ((b - a).cross(c - a )).normalize();
     }
-    Vector3f l = (s- PLP  ).normalize();
+
+    Vector3f l = ( s - PLP  ).normalize();
+    if( VvsS == 1 || VvsS == 3 ){
+        l.x = -l.x;l.y = -l.y;l.z = -l.z;
+    }
+
     Vector3f v = ( ray.cam - s ).normalize();
     Vector3f h = (( PLP - s ) + ( ray.cam - s ) ).normalize();
-    double distance = (s-PLP ).length();
+    double distance = ( PLP - s ).length();
     double nl = n.dot(l);
     double hn = h.dot(n);
     double maxnl = 0;
@@ -137,7 +142,7 @@ Vector3f make_color( Scene scene,Ray ray ){
         maxnl = nl;
     if ( hn > 0 )
         maxhn = hn;
-    Vector3f L = AL * MA + ( D * PLI * maxnl / ( distance * distance) )+  ( S * PLI * pow(maxhn,scene.materials[mid].phong_exponent) / (distance * distance) );
+    Vector3f L = AL * MA + ( D * PLI * maxnl / ( distance * distance) ) +  ( S * PLI * pow(maxhn,scene.materials[mid].phong_exponent) / (distance * distance) );
 
     return L;
 
