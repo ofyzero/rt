@@ -31,17 +31,16 @@ bool sphere (Ray ray ,Sphere sphere , std::vector<Vec3f> vertex_data,float shado
     delta=b*b-4*a*c;
     if(delta < shadow_ray_epsilon)
         return false;
-    double t1 = -((2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z))/2 + sqrt( b*b-4*a*c ) )/
+    double t1 = -((2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z))/2 + sqrtf( delta ) )/
                 ((ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z)) ;
-    double t2 = -((2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z))/2 - sqrt( b*b-4*a*c ) )/
+    double t2 = -((2*(ray.direction.x)*(ray.cam.x-c_sphere.x)+2*(ray.direction.y)*(ray.cam.y-c_sphere.y)+2*(ray.direction.z)*(ray.cam.z-c_sphere.z))/2 - sqrtf( delta ) )/
                 ((ray.direction.x*ray.direction.x)+(ray.direction.y*ray.direction.y)+(ray.direction.z*ray.direction.z)) ;
 
     if ( t1 < t2)
         tdistance = t1;
     else
         tdistance = t2;
-
-    mid=sphere.material_id;
+    
 
     return true;
 }
@@ -49,27 +48,27 @@ bool triangle( Ray ray,Triangle triangle, std::vector<Vec3f> vertex_data) {
     Vector3f a (vertex_data[triangle.indices.v0_id-1].x,vertex_data[triangle.indices.v0_id-1].y,vertex_data[triangle.indices.v0_id-1].z);
     Vector3f b (vertex_data[triangle.indices.v1_id-1].x,vertex_data[triangle.indices.v1_id-1].y,vertex_data[triangle.indices.v1_id-1].z);
     Vector3f c (vertex_data[triangle.indices.v2_id-1].x,vertex_data[triangle.indices.v2_id-1].y,vertex_data[triangle.indices.v2_id-1].z);
-    Vector3f d = ray.direction - ray.cam;
-    float a1 = a.x - b.x;       float b1 = a.y - b.y;       float c1 = a.z - b.z;
-    float d1 = a.x - c.x;       float e  = a.y - c.y;       float f  = a.z - c.z;
-    float j  = a.x - ray.cam.x; float k  = a.y - ray.cam.y; float l  = a.z - ray.cam.z;
-    float g  = d.x;             float h  = d.y;             float i  = d.z;
-    float M  =   ( a1 * ( e * i - h * f ) + b1 * ( g * f - d1 * i ) + c1 * ( d1 * h - g * e) );
-    float t  = - ( f * ( a1 * k - j * b1 ) + e * ( j * c1 - a1 * l ) + d1 * ( b1 * l - k * c1 ) ) / M;
+    Vector3f d = ray.direction;
+    double a1 = a.x - b.x;       double b1 = a.y - b.y;       double c1 = a.z - b.z;
+    double d1 = a.x - c.x;       double e  = a.y - c.y;       double f  = a.z - c.z;
+    double j  = a.x - ray.cam.x; double k  = a.y - ray.cam.y; double l  = a.z - ray.cam.z;
+    double g  = d.x;             double h  = d.y;             double i  = d.z;
+    double M;
+    M = a1 * (e * i - h * f) + b1 * (g * f - d1 * i) + c1 * (d1 * h - g * e);
+    double t  = - ( f * ( a1 * k - j * b1 ) + e * ( j * c1 - a1 * l ) + d1 * ( b1 * l - k * c1 ) ) / M;
     double t1 = INFINITY;
     if (tdistance > 0)
         t1 = tdistance;
     if (t < 0 || t > t1)
         return false;
-    float alfa =  ( i * ( a1 * k - j * b1 ) + h * ( j * c1 - a1 * l ) + g * ( b1 * l - k * c1 ) ) / M;
+    double alfa =  ( i * ( a1 * k - j * b1 ) + h * ( j * c1 - a1 * l ) + g * ( b1 * l - k * c1 ) ) / M;
     if ( alfa < 0  || alfa > 1)
         return false;
-    float beta =  ( j * ( e * i - h * f ) + k * ( g * f - d1 * i ) + l * ( d1 * h - g * e) ) / M;
+    double beta =  ( j * ( e * i - h * f ) + k * ( g * f - d1 * i ) + l * ( d1 * h - g * e) ) / M;
     if (beta < 0 || beta > 1 - alfa )
         return false;
     tdistance=t;
 
-    mid=triangle.material_id;
     return true;
 }
 Ray raytracer(int x, int y , int width, int height, Camera camera){
@@ -127,10 +126,9 @@ Vector3f make_color( Scene scene,Ray ray ){
     }
 
     Vector3f l = ( s - PLP  ).normalize();
-    if( VvsS == 1 || VvsS == 3 ){
-        l.x = -l.x;l.y = -l.y;l.z = -l.z;
-    }
-
+    /*if (VvsS == 1){
+        l.x = - l.x;l.y = - l.y;l.y = - l.y;
+    }*/
     Vector3f v = ( ray.cam - s ).normalize();
     Vector3f h = (( PLP - s ) + ( ray.cam - s ) ).normalize();
     double distance = ( PLP - s ).length();
@@ -150,6 +148,10 @@ Vector3f make_color( Scene scene,Ray ray ){
 float clamp(float x, float a, float b){
 
     return x < a ? a : (x > b ? b : x);
+}
+
+unsigned char* intersect(unsigned char* image,Scene scene){
+
 }
 int main(int argc, char* argv[])
 {
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
 
     int width = scene.cameras[0].image_width, height = scene.cameras[0].image_height;
     int  i = 0;
-    Camera camera;
+
     Ray ray;
     unsigned char* image = new unsigned char [width * height * 3];
 
@@ -184,6 +186,7 @@ int main(int argc, char* argv[])
     {
         for (int x = 0; x < width; ++x)
         {
+            double tcheck = -1;
             ray = raytracer(x,y,width,height,scene.cameras[0]);
             int j = 0 ;
             while ( j < scene.spheres.size()){
@@ -191,19 +194,20 @@ int main(int argc, char* argv[])
                     mid = scene.spheres[j].material_id-1;
                     VvsS = 2 ;
                     point = j;
+                    tcheck = tdistance;
                     break;
                 }
                 j++;
             }
             j = 0 ;
-
             while ( j < scene.triangles.size()){
 
-                if( triangle(ray, scene.triangles[j], scene.vertex_data) ){
-                    mid = scene.triangles[j].material_id-1;
-                    VvsS = 1 ;
-                    point = j;
-                    break;
+                if( triangle(ray, scene.triangles[j], scene.vertex_data) && ( tcheck == -1 || tcheck >  tdistance ) ){
+                        tcheck = tdistance;
+                        mid = scene.triangles[j].material_id-1;
+                        VvsS = 1 ;
+                        point = j;
+                        break;
                 }
                 j++;
             }
@@ -215,13 +219,14 @@ int main(int argc, char* argv[])
                 while(k < scene.meshes[j].faces.size()){
 
                     triangle_temp.indices = scene.meshes[j].faces[k];
-                    triangle_temp.material_id = scene.meshes[j].material_id;
-                    if (   triangle(ray, triangle_temp, scene.vertex_data) ){
-                        mid = triangle_temp.material_id-1;
-                        VvsS = 3 ;
-                        point = j;
-                        Meshface = k;
-                        break;
+
+                    if (   triangle(ray, triangle_temp, scene.vertex_data) && (tcheck == -1 || tcheck >  tdistance) ){
+                            tcheck = tdistance;
+                            mid = scene.meshes[j].material_id - 1;
+                            VvsS = 3;
+                            point = j;
+                            Meshface = k;
+                            break;
                     }
                     k++;
                 }
